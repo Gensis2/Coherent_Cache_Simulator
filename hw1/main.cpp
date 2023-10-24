@@ -19,7 +19,7 @@ int main(){
         cout << hex;
         cout << memory << " tag: " << memory/(blockSize * setSize);
         cout << " set: " << (memory/blockSize) % (blockSize * setSize);
-        cout << " block: " << memory % 100 << endl;
+        cout << " block: " << memory % (setSize * blockSize) << endl;
     }
     else{
         cout << "pooppy" << endl;
@@ -29,22 +29,55 @@ int main(){
     return 0;
 }
 
-class Block {
-    int data;
+class Block : public Set {
+private:
+    int tag;
+
+public:
+    Block(){
+
+    }
+
+
+    int getTag(){
+        return tag;
+    }
+    void setTag(int memoryAccess){
+        tag = memoryAccess/(getBlockSize() * getSetSize());
+    }
 };
 
-class Set {
+class Set : public Level {
+private:
     Block* blocks;
-    int assoc;
+
+public:
+    Set(){
+
+    }
 };
 
-class Level {
+class Level : public Cache {
+private:
     Set* sets;
     int levelSize;
+    int assoc;
+    int blockSize;
+
+public:
+    Level(){
+
+    }
 };
 
 class Cache {
+private:
     Level* levels;
-    Level levelHead;
-    Level levelTail;
+    Level* levelHead;
+    Level* levelTail;
+
+public:
+    Cache(){
+
+    }
 };
