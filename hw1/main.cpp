@@ -12,17 +12,28 @@ using namespace std;
 
 class Block{
 private:
+    Block* next;
     int tag;
 
 public:
     Block(){
         tag = 0;
+        next = NULL;
     }
     int getTag(){
         return tag;
     }
     void setTag(int newTag){
         tag = newTag;
+    }
+    Block* getNext(){
+        return next;
+    }
+    void setNext(Block* newNext){
+        next = newNext;
+    }
+    void printBlock(){
+        cout << "Tag = " << tag << hex;
     }
 };
 
@@ -33,8 +44,15 @@ private:
 
 public:
     Set(int newAssoc){
-        Block** blocks = new Block*[assoc];
         assoc = newAssoc;
+        blocks = new Block*[assoc];
+        for(int i = 0; i < assoc; i++){
+            Block* block = new Block();
+            blocks[i] = block;
+            if(i != 0){
+                blocks[i - 1]->setNext(blocks[i]);
+            }
+        }
     }
 
     Block** getBlocks(){
@@ -55,12 +73,19 @@ public:
     void deleteBlock(){
         delete[] blocks;
     }
-
+    void printSet(){
+        for(int i = 0; i < assoc; i++){
+            cout << "Block " << i << ":"  << " ";
+            blocks[i]->printBlock();
+            cout << endl << "\t\t";
+        }
+    }
 };
 
 class Level{
 private:
     Set** sets;
+    Block* head;
     int levelSize;
     int assoc;
     int blockSize;
@@ -75,12 +100,15 @@ public:
         setSize = assoc * blockSize;
         nSets = levelSize/(setSize);
 
-        Set** sets = new Set*[nSets];
+        sets = new Set*[nSets];
         for(int i = 0; i < nSets; i++){
-            sets[i] = new Set(assoc);
+            Set* set = new Set(newAssoc);
+            sets[i] = set;
+            if(i == 0){
+                head = sets[i]->getBlock(i);
+            }
         }
     }
-
     Set** getSets(){
         return sets;
     }
@@ -93,17 +121,44 @@ public:
     int getAssoc(){
         return assoc;
     }
-
     int getSetSize(){
         return setSize;
     }
-
     void deleteSets(){
         for(int i = 0; i < assoc; i++){
             sets[i]->deleteBlock();
         }
         delete[] sets;
     }
+    void printLevel(){
+        for(int i = 0; i < nSets; i++){
+            cout << "Set " << i << dec << ":" << endl << "\t\t";
+            sets[i]->printSet();
+            cout << endl << "\t";
+        }
+    }
+
+    int searchSets(int memory){
+        int tag = memory/(levelSize/(blockSize * assoc));
+        int setN = (memory/blockSize) % (blockSize * assoc);
+        Set* set = sets[setN];
+        
+        for(int i = 0; i < assoc; i++){
+            Block* block = sets[i]->getBlock(i);
+            if()
+        }
+        return 0;
+    }
+
+    void lru(int memory){
+        int search = searchSets(memory);
+        if(search == -1){
+            return;
+        }
+        else{
+
+        }
+    }   
 };
 
 class Cache {
@@ -162,6 +217,16 @@ public:
             delete levelTwo;
         } 
     }
+
+    void printLevels(){
+        cout << "L1 Cache:" << endl << "\t";
+        levelOne->printLevel();
+        if(cacheSize == 2){
+            cout << endl;
+            cout << "L2 Cache" << endl << "\t";
+            levelTwo->printLevel();
+        }
+    }
 };
 
 int main(){
@@ -179,7 +244,6 @@ int main(){
     ifstream ifp ("gcc_trace.txt");
 
     Cache* cache = new Cache(1024, 0, 16, 2, 0);
-    cout << cache->getLevelOne()->getLevelSize() << endl << cache->getLevelTwo()->getLevelSize() << endl;
 
     for(int i = 0; i <= 10; i++){
         if(ifp.is_open()){ 
@@ -187,13 +251,12 @@ int main(){
             set = (memory/blockSize) % (blockSize * assoc);
             tag = memory/(cacheSize/(blockSize * assoc));
             cout << memory << " tag: " << hex << tag << "\tset: " << dec << set << endl;
-
-
         }
         else{
             cout << "poopy" << endl;
         }
     }
+    cache->printLevels();
     ifp.close();
     delete cache;
     return 0;
