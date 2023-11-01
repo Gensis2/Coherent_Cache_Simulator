@@ -9,10 +9,10 @@ class Cache;
 
 using namespace std;
 
-
 class Block{
 private:
     Block* next;
+    Block* prev;
     int tag;
 
 public:
@@ -32,6 +32,12 @@ public:
     void setNext(Block* newNext){
         next = newNext;
     }
+    Block* getPrev(){
+        return prev;
+    }
+    void setPrev(Block* newPrev){
+        prev = newPrev;
+    }
     void printBlock(){
         cout << "Tag = " << tag << hex;
     }
@@ -49,9 +55,6 @@ public:
         for(int i = 0; i < assoc; i++){
             Block* block = new Block();
             blocks[i] = block;
-            if(i != 0){
-                blocks[i - 1]->setNext(blocks[i]);
-            }
         }
     }
 
@@ -108,6 +111,21 @@ public:
                 head = sets[i]->getBlock(i);
             }
         }
+
+        head = sets[0]->getBlock(0);
+        Block* iterator = head;
+        for(int i = 0; i < nSets; i++){
+            for(int j = 0; j < assoc; j++){
+                iterator->setNext(sets[i]->getBlock(j));
+            }
+        }
+
+    }
+    void setHead(Block* newHead){
+        head = newHead;
+    }
+    Block* getHead(){
+        return head;
     }
     Set** getSets(){
         return sets;
@@ -137,21 +155,19 @@ public:
             cout << endl << "\t";
         }
     }
-
-    int searchSets(int memory){
+    int checkSets(int memory){
         int tag = memory/(levelSize/(blockSize * assoc));
         int setN = (memory/blockSize) % (blockSize * assoc);
         Set* set = sets[setN];
         
         for(int i = 0; i < assoc; i++){
             Block* block = sets[i]->getBlock(i);
-            if()
+            if(block->getTag() != tag);
         }
         return 0;
     }
-
     void lru(int memory){
-        int search = searchSets(memory);
+        int search = checkSets(memory);
         if(search == -1){
             return;
         }
@@ -244,6 +260,11 @@ int main(){
     ifstream ifp ("gcc_trace.txt");
 
     Cache* cache = new Cache(1024, 0, 16, 2, 0);
+    Block* block = cache->getLevelOne()->getHead();
+    while(block->getNext() != cache->getLevelOne()->getHead()){
+        cout << "block tag:" << block->getTag() << endl;
+        break;
+    }
 
     for(int i = 0; i <= 10; i++){
         if(ifp.is_open()){ 
