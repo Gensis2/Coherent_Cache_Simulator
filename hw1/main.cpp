@@ -56,6 +56,12 @@ public:
             Block* block = new Block();
             blocks[i] = block;
         }
+        for(int i = 0; i < assoc; i++){
+            if(i != assoc - 1){
+                blocks[i]->setNext(blocks[i + 1]);
+                blocks[i + 1]->setPrev(blocks[i]);
+            }
+        }
     }
 
     Block** getBlocks(){
@@ -70,7 +76,6 @@ public:
     void setAssoc(int newAssoc){
         cout << newAssoc << endl;
         assoc = newAssoc;
-        cout << "here" << endl;
         return;
     }
     void deleteBlock(){
@@ -102,24 +107,24 @@ public:
         blockSize = newBlockSize;
         setSize = assoc * blockSize;
         nSets = levelSize/(setSize);
-
         sets = new Set*[nSets];
+
         for(int i = 0; i < nSets; i++){
             Set* set = new Set(newAssoc);
             sets[i] = set;
-            if(i == 0){
-                head = sets[i]->getBlock(i);
+            if(i != nSets - 1 && i >= 1){
+                sets[i - 1]->getBlock(assoc - 1)->setNext(sets[i]->getBlock(0));
+                sets[i]->getBlock(0)->setPrev(sets[i - 1]->getBlock(assoc - 1));
+            }
+            if(i == nSets - 1){
+                sets[i - 1]->getBlock(assoc - 1)->setNext(sets[i]->getBlock(0));
+                sets[i]->getBlock(0)->setPrev(sets[i - 1]->getBlock(assoc - 1));
             }
         }
+        sets[0]->getBlock(0)->setPrev(sets[nSets - 1]->getBlock(assoc - 1));
+        sets[nSets - 1]->getBlock(assoc - 1)->setNext(sets[0]->getBlock(0));
 
         head = sets[0]->getBlock(0);
-        Block* iterator = head;
-        for(int i = 0; i < nSets; i++){
-            for(int j = 0; j < assoc; j++){
-                iterator->setNext(sets[i]->getBlock(j));
-            }
-        }
-
     }
     void setHead(Block* newHead){
         head = newHead;
@@ -155,6 +160,7 @@ public:
             cout << endl << "\t";
         }
     }
+    
     int checkSets(int memory){
         int tag = memory/(levelSize/(blockSize * assoc));
         int setN = (memory/blockSize) % (blockSize * assoc);
@@ -183,6 +189,8 @@ private:
     Level* levelTwo;
     int cacheSize;
     int blockSize;
+    int writePolicy;
+    int inclusionPolity;
 
 public:
     Cache(int cacheOneSize, int cacheTwoSize, int newBlockSize, int cacheOneAssoc, int cacheTwoAssoc){
@@ -261,23 +269,19 @@ int main(){
 
     Cache* cache = new Cache(1024, 0, 16, 2, 0);
     Block* block = cache->getLevelOne()->getHead();
-    while(block->getNext() != cache->getLevelOne()->getHead()){
-        cout << "block tag:" << block->getTag() << endl;
-        break;
-    }
+
 
     for(int i = 0; i <= 10; i++){
         if(ifp.is_open()){ 
             ifp >> operation >> hex >> memory;
-            set = (memory/blockSize) % (blockSize * assoc);
-            tag = memory/(cacheSize/(blockSize * assoc));
-            cout << memory << " tag: " << hex << tag << "\tset: " << dec << set << endl;
+            //set = (memory/blockSize) % (blockSize * assoc);
+            //tag = memory/(cacheSize/(blockSize * assoc));
+            //cout << memory << " tag: " << hex << tag << "\tset: " << dec << set << endl;
         }
         else{
             cout << "poopy" << endl;
         }
     }
-    cache->printLevels();
     ifp.close();
     delete cache;
     return 0;
