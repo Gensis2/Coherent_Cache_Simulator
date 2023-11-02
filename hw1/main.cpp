@@ -46,6 +46,8 @@ public:
 class Set{
 private:
     Block** blocks;
+    Block* head;
+    Block* tail;
     int assoc;
 
 public:
@@ -56,12 +58,17 @@ public:
             Block* block = new Block();
             blocks[i] = block;
         }
+        head = blocks[0];
+        tail = blocks[assoc - 1];
+        head->setPrev(tail);
+        tail->setNext(head);
         for(int i = 0; i < assoc; i++){
             if(i != assoc - 1){
                 blocks[i]->setNext(blocks[i + 1]);
                 blocks[i + 1]->setPrev(blocks[i]);
             }
         }
+
     }
 
     Block** getBlocks(){
@@ -69,6 +76,18 @@ public:
     }
     Block* getBlock(int i){
         return blocks[i];
+    }
+    void setHead(Block* newHead){
+        head = newHead;
+    }
+    Block* getHead(){
+        return head;
+    }
+    void setTail(Block* newHead){
+        head = newHead;
+    }
+    Block* getTail(){
+        return head;
     }
     void addBlock(int i, Block* newBlock){
         blocks[i] = newBlock;
@@ -78,6 +97,31 @@ public:
         assoc = newAssoc;
         return;
     }
+    //retuns the block that was replaced or most recently used
+    //If tag is found, return NULL;
+    Block* memoryAccess(int newTag){
+        Block* compareBlock = head;
+        do{
+            if(compareBlock->getTag() == newTag){
+                return NULL;
+            }
+            else if(compareBlock->getTag() == 0){
+                compareBlock->setTag(newTag);
+                return compareBlock;
+            }
+            compareBlock = compareBlock->getNext();
+        }while(compareBlock != head);
+        compareBlock = head;
+        do{
+            if(compareBlock->getTag() != newTag){
+                compareBlock->setTag(newTag);
+                return compareBlock;
+            }
+            compareBlock = compareBlock->getNext();
+        }while(compareBlock != head);
+        return NULL;
+    }
+
     void deleteBlock(){
         delete[] blocks;
     }
@@ -93,15 +137,20 @@ public:
 class Level{
 private:
     Set** sets;
-    Block* head;
     int levelSize;
     int assoc;
     int blockSize;
     int nSets;
     int setSize;
+    int reads, readMisses, writes, writeMisses, writeBacks, writeThroughs;
+    double missRate;
+
 
 public:
     Level(int newAssoc, int newLevelSize, int newBlockSize){
+        reads = 0; readMisses = 0; writes = 0; writeMisses = 0;
+        writeBacks = 0; writeThroughs = 0; missRate = 0;
+
         assoc = newAssoc;
         levelSize = newLevelSize;
         blockSize = newBlockSize;
@@ -112,25 +161,7 @@ public:
         for(int i = 0; i < nSets; i++){
             Set* set = new Set(newAssoc);
             sets[i] = set;
-            if(i != nSets - 1 && i >= 1){
-                sets[i - 1]->getBlock(assoc - 1)->setNext(sets[i]->getBlock(0));
-                sets[i]->getBlock(0)->setPrev(sets[i - 1]->getBlock(assoc - 1));
-            }
-            if(i == nSets - 1){
-                sets[i - 1]->getBlock(assoc - 1)->setNext(sets[i]->getBlock(0));
-                sets[i]->getBlock(0)->setPrev(sets[i - 1]->getBlock(assoc - 1));
-            }
         }
-        sets[0]->getBlock(0)->setPrev(sets[nSets - 1]->getBlock(assoc - 1));
-        sets[nSets - 1]->getBlock(assoc - 1)->setNext(sets[0]->getBlock(0));
-
-        head = sets[0]->getBlock(0);
-    }
-    void setHead(Block* newHead){
-        head = newHead;
-    }
-    Block* getHead(){
-        return head;
     }
     Set** getSets(){
         return sets;
@@ -191,6 +222,7 @@ private:
     int blockSize;
     int writePolicy;
     int inclusionPolity;
+
 
 public:
     Cache(int cacheOneSize, int cacheTwoSize, int newBlockSize, int cacheOneAssoc, int cacheTwoAssoc){
@@ -268,7 +300,17 @@ int main(){
     ifstream ifp ("gcc_trace.txt");
 
     Cache* cache = new Cache(1024, 0, 16, 2, 0);
-    Block* block = cache->getLevelOne()->getHead();
+
+    cache->getLevelOne()->getSet(0)->memoryAccess(1);
+    cache->getLevelOne()->getSet(0)->memoryAccess(5);
+    cache->getLevelOne()->getSet(0)->memoryAccess(5);
+    cache->getLevelOne()->getSet(0)->memoryAccess(4);
+    cache->getLevelOne()->getSet(0)->memoryAccess(7);
+    Block* block = cache->getLevelOne()->getSet(0)->getBlock(0);
+    for(int i = 0; i < 4; i++){
+        cout << block->getTag() << endl;
+        block = block->getNext();
+    }
 
 
     for(int i = 0; i <= 10; i++){
