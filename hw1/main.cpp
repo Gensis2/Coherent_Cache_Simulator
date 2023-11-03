@@ -14,11 +14,34 @@ private:
     Block* next;
     Block* prev;
     int tag;
+    bool hit;
+    bool miss;
 
 public:
     Block(){
         tag = 0;
+        hit = false;
+        miss = false;
         next = NULL;
+        prev = NULL;
+    }
+    void setHit(){
+        hit = true;
+    }
+    void resetHit(){
+        hit = false;
+    }
+    bool getHit(){
+        return hit;
+    }
+    void setMiss(){
+        miss = true;
+    }
+    void resetMiss(){
+        miss = false;
+    }
+    bool getMiss(){
+        return miss;
     }
     int getTag(){
         return tag;
@@ -103,9 +126,11 @@ public:
         Block* compareBlock = head;
         do{
             if(compareBlock->getTag() == newTag){
-                return NULL;
+                compareBlock->setHit();
+                return compareBlock;
             }
             else if(compareBlock->getTag() == 0){
+                compareBlock->setMiss();
                 compareBlock->setTag(newTag);
                 return compareBlock;
             }
@@ -114,12 +139,45 @@ public:
         compareBlock = head;
         do{
             if(compareBlock->getTag() != newTag){
+                compareBlock->setMiss();
                 compareBlock->setTag(newTag);
                 return compareBlock;
             }
             compareBlock = compareBlock->getNext();
         }while(compareBlock != head);
         return NULL;
+    }
+
+    int lruSet(int newTag){
+        const int hit = 0, miss = 1;
+        Block* access = memoryAccess(newTag);
+        access->getNext()->setPrev(access->getPrev());
+        access->getPrev()->setNext(access->getNext());
+        access->setNext(head);
+        access->setNext(tail);
+        tail->setNext(access);
+        head->setPrev(access);
+        tail = access;
+        if(access->getHit() == true){
+            return hit;
+        }
+        else if(access->getMiss() == true){
+            return miss;
+        }
+        return -1;
+    } 
+
+    int fifoSet(int newTag){
+        const int hit = 0, miss = 1;
+        Block* access = memoryAccess(newTag);
+        tail = head;
+        head = head->getNext();
+        if(access->getHit() == true){
+            return hit;
+        }
+        else if(access->getMiss() == true){
+            return miss;
+        }
     }
 
     void deleteBlock(){
@@ -192,26 +250,11 @@ public:
         }
     }
     
-    int checkSets(int memory){
+    void memoryAccess(int memory){
         int tag = memory/(levelSize/(blockSize * assoc));
-        int setN = (memory/blockSize) % (blockSize * assoc);
-        Set* set = sets[setN];
-        
-        for(int i = 0; i < assoc; i++){
-            Block* block = sets[i]->getBlock(i);
-            if(block->getTag() != tag);
-        }
-        return 0;
+        int set = (memory/blockSize) % (blockSize * assoc);
+        sets[set]->lruSet(tag);
     }
-    void lru(int memory){
-        int search = checkSets(memory);
-        if(search == -1){
-            return;
-        }
-        else{
-
-        }
-    }   
 };
 
 class Cache {
@@ -301,30 +344,26 @@ int main(){
 
     Cache* cache = new Cache(1024, 0, 16, 2, 0);
 
-    cache->getLevelOne()->getSet(0)->memoryAccess(1);
-    cache->getLevelOne()->getSet(0)->memoryAccess(5);
-    cache->getLevelOne()->getSet(0)->memoryAccess(5);
-    cache->getLevelOne()->getSet(0)->memoryAccess(4);
-    cache->getLevelOne()->getSet(0)->memoryAccess(7);
-    Block* block = cache->getLevelOne()->getSet(0)->getBlock(0);
-    for(int i = 0; i < 4; i++){
-        cout << block->getTag() << endl;
-        block = block->getNext();
-    }
 
 
-    for(int i = 0; i <= 10; i++){
+
+    for(int i = 0; i <= 284; i++){
         if(ifp.is_open()){ 
             ifp >> operation >> hex >> memory;
+            if(i == 283){
+                cout << "print here" << endl;
+            }
             //set = (memory/blockSize) % (blockSize * assoc);
             //tag = memory/(cacheSize/(blockSize * assoc));
             //cout << memory << " tag: " << hex << tag << "\tset: " << dec << set << endl;
+            cache->getLevelOne()->memoryAccess(memory);
         }
         else{
             cout << "poopy" << endl;
         }
     }
     ifp.close();
+    cache->printLevels();
     delete cache;
     return 0;
 }
